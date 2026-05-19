@@ -7,7 +7,7 @@ The app is built for fast one-handed use on a phone: large tap targets, simple d
 ## Features
 
 - **Feeding diary** — log time, amount, duration, and notes.
-- **Sleep tracker** — start/stop sleep sessions, see the active nap timer, daily total, longest sleep, and history.
+- **Sleep tracker** — add sleep entries with start/end time, daily total, longest sleep, and history.
 - **Diaper tracker** — one-tap wet/dirty logging with daily counts.
 - **Daily notes** — autosaved notes per day.
 - **Calendar view** — choose a day and review history.

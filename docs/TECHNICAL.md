@@ -36,14 +36,12 @@ Stores diaper events.
 
 ### `sleep_sessions`
 
-Stores sleep as start/stop sessions.
+Stores sleep entries with start and end timestamps.
 
 - `day` — local day the sleep started
 - `start_at`
-- `end_at` — nullable while the baby is currently sleeping
+- `end_at` — sleep end timestamp
 - `note`
-
-The UI treats one open `end_at = null` row as the active sleep session.
 
 ### `day_notes`
 
@@ -61,10 +59,9 @@ Created on API startup if missing. Stores scrypt password hashes.
 
 The sleep module is intentionally simple and phone-friendly:
 
-- Large **Заспива** button starts a sleep session.
-- Large **Събуди се** button ends the active session.
-- Active session card shows live duration and start time.
-- Daily stats show total sleep, number of sessions, and longest session.
+- Pick **Начало** and **Край** with large time controls.
+- Tap **Добави сън** to save the entry.
+- Daily stats show total sleep, number of sessions, longest session, and average session.
 - History rows show start/end and duration; records can be deleted.
 
 ## Schema updates

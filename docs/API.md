@@ -50,13 +50,9 @@ Create body:
 
 Returns sleep sessions for the selected day.
 
-### `GET /api/sleeps/active`
-
-Returns the latest active sleep session or `null`.
-
 ### `POST /api/sleeps`
 
-Starts a sleep session. Only one active session should exist at a time.
+Creates a completed sleep entry.
 
 ```json
 {
@@ -64,14 +60,6 @@ Starts a sleep session. Only one active session should exist at a time.
   "startAt": "2026-05-19T10:30:00.000Z",
   "note": "optional"
 }
-```
-
-### `POST /api/sleeps/:id/stop`
-
-Stops a sleep session.
-
-```json
-{ "endAt": "2026-05-19T11:15:00.000Z" }
 ```
 
 ### `PATCH /api/sleeps/:id`

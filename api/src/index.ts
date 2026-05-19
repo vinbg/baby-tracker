@@ -3,7 +3,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from './db.ts';
 import { feedings, dayNotes, settings, diapers, sleepSessions } from './schema.ts';
 import { getRecommendation } from './recommendations.ts';
@@ -216,45 +216,19 @@ app.get('/api/sleeps', async (c) => {
   return c.json(rows);
 });
 
-// GET /api/sleeps/active — latest open sleep session, if any.
-app.get('/api/sleeps/active', async (c) => {
-  const [row] = await db
-    .select()
-    .from(sleepSessions)
-    .where(isNull(sleepSessions.endAt))
-    .orderBy(desc(sleepSessions.startAt))
-    .limit(1);
-  return c.json(row ?? null);
-});
-
-// POST /api/sleeps { day, startAt?, note? } — starts a sleep session.
+// POST /api/sleeps { day, startAt, endAt, note? } — creates one completed sleep entry.
 app.post('/api/sleeps', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const day = String(body.day ?? '').slice(0, 10);
-  if (!day) return c.json({ error: 'invalid input' }, 400);
+  const startAt = String(body.startAt ?? '');
+  const endAt = String(body.endAt ?? '');
+  if (!day || !startAt || !endAt || new Date(endAt).getTime() <= new Date(startAt).getTime()) {
+    return c.json({ error: 'invalid input' }, 400);
+  }
 
-  const existing = await db
-    .select()
-    .from(sleepSessions)
-    .where(isNull(sleepSessions.endAt))
-    .orderBy(desc(sleepSessions.startAt))
-    .limit(1);
-  if (existing[0]) return c.json({ error: 'sleep session already active', active: existing[0] }, 409);
-
-  const startAt = body.startAt ? String(body.startAt) : new Date().toISOString();
   const note = typeof body.note === 'string' ? body.note : null;
-  const [row] = await db.insert(sleepSessions).values({ day, startAt, note }).returning();
+  const [row] = await db.insert(sleepSessions).values({ day, startAt, endAt, note }).returning();
   return c.json(row, 201);
-});
-
-// POST /api/sleeps/:id/stop { endAt? } — ends an active sleep session.
-app.post('/api/sleeps/:id/stop', async (c) => {
-  const id = Number(c.req.param('id'));
-  const body = await c.req.json().catch(() => ({}));
-  const endAt = body.endAt ? String(body.endAt) : new Date().toISOString();
-  const [row] = await db.update(sleepSessions).set({ endAt }).where(eq(sleepSessions.id, id)).returning();
-  if (!row) return c.json({ error: 'not found' }, 404);
-  return c.json(row);
 });
 
 // PATCH /api/sleeps/:id { day?, startAt?, endAt?, note? }

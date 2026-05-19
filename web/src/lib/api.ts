@@ -179,18 +179,11 @@ export const api = {
   deleteDiaper: (id: number) =>
     authFetch(`/api/diapers/${id}`, { method: 'DELETE' }).then(j<{ ok: true }>),
   sleeps: (day: string) => authFetch(`/api/sleeps?day=${day}`).then(j<SleepSession[]>),
-  activeSleep: () => authFetch('/api/sleeps/active').then(j<SleepSession | null>),
-  startSleep: (input: { day: string; startAt?: string; note?: string | null }) =>
+  addSleep: (input: { day: string; startAt: string; endAt: string; note?: string | null }) =>
     authFetch('/api/sleeps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
-    }).then(j<SleepSession>),
-  stopSleep: (id: number, endAt?: string) =>
-    authFetch(`/api/sleeps/${id}/stop`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endAt }),
     }).then(j<SleepSession>),
   patchSleep: (id: number, patch: Partial<Pick<SleepSession, 'day' | 'startAt' | 'endAt' | 'note'>>) =>
     authFetch(`/api/sleeps/${id}`, {
