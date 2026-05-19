@@ -1,16 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, BarChart3, Bed, Droplets, Milk, Sparkles } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bed, ChevronLeft, ChevronRight, Droplets, Milk, Sparkles } from 'lucide-react';
 import { api, type TrendDay } from '../lib/api';
 
 export function TrendsView({ onBack }: { onBack?: () => void }) {
   const [days, setDays] = useState(14);
+  const [page, setPage] = useState(1);
   const q = useQuery({ queryKey: ['trends', days], queryFn: () => api.trends(days) });
   const rows = q.data?.rows ?? [];
   const maxMilk = Math.max(1, ...rows.map((r) => r.feedingMl));
   const maxSleep = Math.max(1, ...rows.map((r) => r.sleepMin));
   const maxDiapers = Math.max(1, ...rows.map((r) => r.wetCount + r.dirtyCount));
   const insights = useMemo(() => buildInsights(rows), [rows]);
+  const dayRows = useMemo(() => rows.slice().reverse(), [rows]);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(dayRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRows = dayRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [days]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -80,11 +90,17 @@ export function TrendsView({ onBack }: { onBack?: () => void }) {
           </section>
 
           <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] overflow-hidden">
-            <div className="px-4 py-3 border-b border-[var(--color-line)]">
-              <h3 className="text-sm font-semibold">По дни</h3>
+            <div className="px-4 py-3 border-b border-[var(--color-line)] flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">По дни</h3>
+                <p className="text-xs text-[var(--color-muted)]">10 записа на страница</p>
+              </div>
+              <span className="text-xs text-[var(--color-muted)] tabular-nums">
+                {dayRows.length ? `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, dayRows.length)} / ${dayRows.length}` : '0 / 0'}
+              </span>
             </div>
             <ul className="divide-y divide-[var(--color-line)]">
-              {rows.slice().reverse().map((r) => (
+              {pagedRows.map((r) => (
                 <li key={r.day} className="px-4 py-3 grid grid-cols-[4.5rem_1fr] sm:grid-cols-[7rem_repeat(4,1fr)] gap-3 items-center text-sm">
                   <div className="font-bold tabular-nums">{formatDay(r.day)}</div>
                   <DayMetric label="мляко" value={`${r.feedingMl} мл`} />
@@ -94,6 +110,29 @@ export function TrendsView({ onBack }: { onBack?: () => void }) {
                 </li>
               ))}
             </ul>
+            {totalPages > 1 && (
+              <div className="px-4 py-3 border-t border-[var(--color-line)] flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="h-10 px-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] text-sm font-bold text-[var(--color-ink-dim)] inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed hover:text-[var(--color-brand)] hover:border-[var(--color-brand)] transition"
+                >
+                  <ChevronLeft size={16} /> Назад
+                </button>
+                <div className="text-sm font-extrabold tabular-nums">
+                  {currentPage} / {totalPages}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="h-10 px-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] text-sm font-bold text-[var(--color-ink-dim)] inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed hover:text-[var(--color-brand)] hover:border-[var(--color-brand)] transition"
+                >
+                  Напред <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </section>
         </>
       )}
