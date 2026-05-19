@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bed, Clock, Droplets, Milk, Sparkles, Trash2 } from 'lucide-react';
+import { BarChart3, Bed, Clock, Droplets, Milk, Sparkles, Trash2 } from 'lucide-react';
 import { api, type Diaper, type DiaperKind, type Feeding, type SleepSession } from '../lib/api';
 import { fmtTime, parseTimestamp } from '../lib/utils';
 import { ForecastList } from './ForecastList';
@@ -10,9 +10,9 @@ import { TimePicker } from './TimePicker';
 
 type EntryTab = 'feeding' | 'sleep' | 'diaper' | 'note';
 
-type Props = { day: string };
+type Props = { day: string; onOpenTrends?: () => void };
 
-export function DayView({ day }: Props) {
+export function DayView({ day, onOpenTrends }: Props) {
   const [tab, setTab] = useState<EntryTab>('feeding');
   const [feedingPrefill, setFeedingPrefill] = useState<{ key: string; hour: number; minute: number; amount: number } | null>(null);
   const qc = useQueryClient();
@@ -49,6 +49,7 @@ export function DayView({ day }: Props) {
         wet={wet}
         dirty={dirty}
         nextFeed={next}
+        onOpenTrends={onOpenTrends}
       />
 
       <QuickActions active={tab} onPick={setTab} />
@@ -58,7 +59,6 @@ export function DayView({ day }: Props) {
         active={tab}
         suggestedMl={rec.data?.suggestedNextMl ?? rec.data?.plan.perFeedMl ?? 135}
         onDone={invalidateDay}
-        onTabChange={setTab}
         feedingPrefill={feedingPrefill}
       />
 
@@ -109,6 +109,7 @@ function TodayHero({
   wet,
   dirty,
   nextFeed,
+  onOpenTrends,
 }: {
   consumedMl: number;
   dailyTotalMl: number;
@@ -118,6 +119,7 @@ function TodayHero({
   wet: number;
   dirty: number;
   nextFeed: string;
+  onOpenTrends?: () => void;
 }) {
   const pct = dailyTotalMl > 0 ? Math.min(100, Math.round((consumedMl / dailyTotalMl) * 100)) : 0;
   return (
@@ -145,6 +147,15 @@ function TodayHero({
         <span>{consumedCount} / {feedTarget || '—'} хранения</span>
         <span>{pct}%</span>
       </div>
+      {onOpenTrends && (
+        <button
+          type="button"
+          onClick={onOpenTrends}
+          className="mt-4 w-full h-11 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] text-sm font-extrabold text-[var(--color-brand-strong)] inline-flex items-center justify-center gap-2 active:scale-[0.98] transition"
+        >
+          <BarChart3 size={16} /> Виж трендове
+        </button>
+      )}
     </section>
   );
 }
@@ -193,22 +204,22 @@ function EntryPanel({
   active,
   suggestedMl,
   onDone,
-  onTabChange,
   feedingPrefill,
 }: {
   day: string;
   active: EntryTab;
   suggestedMl: number;
   onDone: () => void;
-  onTabChange: (tab: EntryTab) => void;
   feedingPrefill: { key: string; hour: number; minute: number; amount: number } | null;
 }) {
   return (
     <section className="rounded-[1.6rem] border border-[var(--color-line)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)]">
-      <div className="mb-3 grid grid-cols-3 rounded-2xl bg-[var(--color-surface-2)] p-1 gap-1">
-        <TabButton active={active === 'feeding'} onClick={() => onTabChange('feeding')}>Храна</TabButton>
-        <TabButton active={active === 'sleep'} onClick={() => onTabChange('sleep')}>Сън</TabButton>
-        <TabButton active={active === 'diaper'} onClick={() => onTabChange('diaper')}>Памперс</TabButton>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-wide text-[var(--color-muted)] font-semibold">бързо добавяне</div>
+          <h2 className="text-sm font-extrabold">{entryTitle(active)}</h2>
+        </div>
+        <div className="text-xs text-[var(--color-muted)]">избери от бутоните горе</div>
       </div>
 
       {active === 'feeding' && <FeedingEntry day={day} suggestedMl={suggestedMl} prefill={feedingPrefill} onDone={onDone} />}
@@ -223,16 +234,12 @@ function EntryPanel({
   );
 }
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`h-10 rounded-xl text-sm font-bold transition ${active ? 'bg-[var(--color-surface)] text-[var(--color-brand)] shadow-sm' : 'text-[var(--color-muted)]'}`}
-    >
-      {children}
-    </button>
-  );
+
+function entryTitle(active: EntryTab) {
+  if (active === 'feeding') return 'Ново хранене';
+  if (active === 'sleep') return 'Нов сън';
+  if (active === 'diaper') return 'Нов памперс';
+  return 'Бележка за деня';
 }
 
 function FeedingEntry({ day, suggestedMl, prefill, onDone }: { day: string; suggestedMl: number; prefill: { key: string; hour: number; minute: number; amount: number } | null; onDone: () => void }) {

@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, CalendarDays, Home, LogOut, Moon, Settings, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
 import { api, clearAuthToken, hasAuthToken, setAuthToken } from './lib/api';
 import { ageLabelFromDate, dayKey, fmtDay } from './lib/utils';
 import { useTheme } from './lib/theme';
@@ -152,7 +152,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         </aside>
 
         <section className="min-w-0">
-          {view === 'trends' ? <TrendsView /> : <DayView day={day} />}
+          {view === 'trends' ? <TrendsView onBack={() => setView('today')} /> : <DayView day={day} onOpenTrends={() => setView('trends')} />}
         </section>
 
         {baby.data && (
@@ -162,9 +162,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         )}
       </main>
 
-      <MobileBottomNav view={view} onChange={setView} />
 
-      <footer className="text-center text-[11px] sm:text-xs text-[var(--color-muted)] px-4 pt-6 pb-24 lg:pb-6">
+      <footer className="text-center text-[11px] sm:text-xs text-[var(--color-muted)] px-4 pt-6 pb-6">
         Препоръката е от опаковката HiPP Combiotic 1. Реалните дози са в "Моят план". Винаги следвай педиатър.
       </footer>
     </div>
@@ -240,29 +239,6 @@ function DateStrip({ selected, onSelect, birthDate }: { selected: Date; onSelect
   );
 }
 
-function MobileBottomNav({ view, onChange }: { view: 'today' | 'days' | 'trends' | 'plan'; onChange: (view: 'today' | 'days' | 'trends' | 'plan') => void }) {
-  const items: Array<{ icon: React.ReactNode; label: string; id: 'today' | 'days' | 'trends' | 'plan' }> = [
-    { icon: <Home size={19} />, label: 'Днес', id: 'today' },
-    { icon: <CalendarDays size={19} />, label: 'Дни', id: 'days' },
-    { icon: <BarChart3 size={19} />, label: 'Тренд', id: 'trends' },
-    { icon: <Settings size={19} />, label: 'План', id: 'plan' },
-  ];
-  return (
-    <nav className="lg:hidden fixed left-3 right-3 bottom-3 z-20 rounded-[1.6rem] border border-[var(--color-line)] bg-[var(--color-surface)]/90 backdrop-blur-xl shadow-[var(--shadow-soft)] p-2 grid grid-cols-4 gap-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-      {items.map((item) => (
-        <button
-          key={item.label}
-          type="button"
-          onClick={() => onChange(item.id)}
-          className={`rounded-2xl py-2 text-[11px] font-bold flex flex-col items-center gap-1 ${view === item.id ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}
-        >
-          {item.icon}
-          {item.label}
-        </button>
-      ))}
-    </nav>
-  );
-}
 
 export default function App() {
   const [authed, setAuthed] = useState(() => hasAuthToken());

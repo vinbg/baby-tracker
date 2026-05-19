@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Bed, Droplets, Milk, Sparkles } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bed, Droplets, Milk, Sparkles } from 'lucide-react';
 import { api, type TrendDay } from '../lib/api';
 
-export function TrendsView() {
+export function TrendsView({ onBack }: { onBack?: () => void }) {
   const [days, setDays] = useState(14);
   const q = useQuery({ queryKey: ['trends', days], queryFn: () => api.trends(days) });
   const rows = q.data?.rows ?? [];
@@ -16,12 +16,24 @@ export function TrendsView() {
     <div className="space-y-4 sm:space-y-6">
       <section className="rounded-[1.6rem] border border-[var(--color-line)] bg-gradient-to-br from-[var(--color-surface)] to-[var(--color-surface-2)] p-4 sm:p-5 shadow-[var(--shadow-soft)]">
         <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="mt-1 shrink-0 w-10 h-10 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] inline-flex items-center justify-center text-[var(--color-ink-dim)] hover:text-[var(--color-brand)] transition"
+                aria-label="Назад към деня"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
           <div>
             <div className="text-[11px] uppercase tracking-wide text-[var(--color-muted)] font-semibold">анализ</div>
             <h2 className="mt-1 text-lg sm:text-2xl font-bold tracking-tight flex items-center gap-2">
               <BarChart3 size={22} /> Трендове
             </h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">Мляко, сън и памперси за последните дни.</p>
+          </div>
           </div>
           <div className="inline-flex rounded-full bg-[var(--color-surface)] border border-[var(--color-line)] p-1 shadow-sm">
             {[7, 14, 30].map((v) => (
