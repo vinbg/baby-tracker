@@ -51,8 +51,8 @@ export function TrendsView({ onBack }: { onBack?: () => void }) {
 
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <TrendStat icon={<Milk size={16} />} label="ср. мляко" value={`${q.data?.summary.avgDailyMl ?? 0} мл`} />
-          <TrendStat icon={<Bed size={16} />} label="ср. сън" value={formatDuration(q.data?.summary.avgDailySleepMin ?? 0)} />
-          <TrendStat icon={<Droplets size={16} />} label="ср. мокри" value={`${q.data?.summary.avgDailyWet ?? 0}/ден`} />
+          <TrendStat icon={<Bed size={16} />} label="ср. сън" value={formatSleepHours(q.data?.summary.avgDailySleepMin ?? 0)} />
+          <TrendStat icon={<Droplets size={16} />} label="мокри / мръсни" value={`${q.data?.summary.avgDailyWet ?? 0} / ${q.data?.summary.avgDailyDirty ?? 0}`} />
           <TrendStat icon={<Sparkles size={16} />} label="дни със записи" value={`${q.data?.summary.trackedDays ?? 0}/${days}`} />
         </div>
       </section>
@@ -63,8 +63,8 @@ export function TrendsView({ onBack }: { onBack?: () => void }) {
         <>
           <section className="grid gap-4 lg:grid-cols-3">
             <TrendChart title="Мляко" unit="мл" rows={rows} max={maxMilk} getValue={(r) => r.feedingMl} tone="brand" />
-            <TrendChart title="Сън" unit="" rows={rows} max={maxSleep} getValue={(r) => r.sleepMin} formatValue={formatDuration} tone="sleep" />
-            <TrendChart title="Памперси" unit="" rows={rows} max={maxDiapers} getValue={(r) => r.wetCount + r.dirtyCount} tone="diaper" />
+            <TrendChart title="Сън" unit="" rows={rows} max={maxSleep} getValue={(r) => r.sleepMin} formatValue={formatSleepHours} tone="sleep" />
+            <DiaperTrendChart rows={rows} max={maxDiapers} />
           </section>
 
           <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] overflow-hidden">
@@ -89,8 +89,8 @@ export function TrendsView({ onBack }: { onBack?: () => void }) {
                   <div className="font-bold tabular-nums">{formatDay(r.day)}</div>
                   <DayMetric label="мляко" value={`${r.feedingMl} мл`} />
                   <DayMetric label="хранения" value={`${r.feedingCount}`} />
-                  <DayMetric label="сън" value={formatDuration(r.sleepMin)} />
-                  <DayMetric label="памперси" value={`💧${r.wetCount} 💩${r.dirtyCount}`} />
+                  <DayMetric label="сън" value={formatSleepHours(r.sleepMin)} />
+                  <DayMetric label="мокри / мръсни" value={`${r.wetCount} / ${r.dirtyCount}`} />
                 </li>
               ))}
             </ul>
@@ -136,6 +136,43 @@ function TrendChart({ title, unit, rows, max, getValue, formatValue, tone }: { t
   );
 }
 
+
+function DiaperTrendChart({ rows, max }: { rows: TrendDay[]; max: number }) {
+  return (
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-soft)]">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-semibold">Памперси</h3>
+          <div className="mt-1 flex items-center gap-3 text-[11px] text-[var(--color-muted)]">
+            <span><span className="inline-block w-2 h-2 rounded-full bg-[var(--color-night-fg)]" /> мокри</span>
+            <span><span className="inline-block w-2 h-2 rounded-full bg-[var(--color-bedtime-fg)]" /> мръсни</span>
+          </div>
+        </div>
+        <span className="text-xs text-[var(--color-muted)]">последни {rows.length} дни</span>
+      </div>
+      <div className="h-36 flex items-end gap-1.5">
+        {rows.map((r) => {
+          const total = r.wetCount + r.dirtyCount;
+          const h = Math.max(4, Math.round((total / max) * 100));
+          const wetPct = total ? Math.round((r.wetCount / total) * 100) : 0;
+          const dirtyPct = total ? 100 - wetPct : 0;
+          return (
+            <div key={r.day} className="flex-1 min-w-0 flex flex-col items-center gap-1">
+              <div className="relative w-full flex items-end h-28 rounded-full bg-[var(--color-surface-2)] overflow-hidden" title={`${formatDay(r.day)}: мокри ${r.wetCount}, мръсни ${r.dirtyCount}`}>
+                <div className="w-full rounded-full overflow-hidden flex flex-col-reverse" style={{ height: `${h}%` }}>
+                  <div className="w-full bg-[var(--color-night-fg)]" style={{ height: `${wetPct}%` }} />
+                  <div className="w-full bg-[var(--color-bedtime-fg)]" style={{ height: `${dirtyPct}%` }} />
+                </div>
+              </div>
+              <span className="text-[9px] text-[var(--color-muted)] tabular-nums">{new Date(r.day + 'T00:00:00').getDate()}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DayMetric({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -156,12 +193,13 @@ function buildInsights(rows: TrendDay[]) {
   if (last && prev) {
     const milkDiff = last.feedingMl - prev.feedingMl;
     const sleepDiff = last.sleepMin - prev.sleepMin;
-    out.push(`Днес млякото е ${diffText(milkDiff, 'мл')} спрямо вчера.`);
-    out.push(`Сънят днес е ${diffTextDuration(sleepDiff)} спрямо вчера.`);
+    out.push(`Днес млякото е ${last.feedingMl} мл (${diffText(milkDiff, 'мл')} спрямо вчера: ${prev.feedingMl} мл).`);
+    out.push(`Сънят днес е ${formatSleepHours(last.sleepMin)} (${diffTextDuration(sleepDiff)} спрямо вчера: ${formatSleepHours(prev.sleepMin)}).`);
+    out.push(`Памперси днес: мокри ${last.wetCount}, мръсни ${last.dirtyCount} (вчера: мокри ${prev.wetCount}, мръсни ${prev.dirtyCount}).`);
   }
-  out.push(`Средно за периода: ${avgMilk} мл мляко и ${formatDuration(avgSleep)} сън на ден.`);
+  out.push(`Средно за периода: ${avgMilk} мл мляко и ${formatSleepHours(avgSleep)} сън на ден.`);
   const bestSleep = nonEmpty.reduce((best, r) => r.sleepMin > best.sleepMin ? r : best, nonEmpty[0]);
-  if (bestSleep?.sleepMin) out.push(`Най-много сън: ${formatDay(bestSleep.day)} — ${formatDuration(bestSleep.sleepMin)}.`);
+  if (bestSleep?.sleepMin) out.push(`Най-много сън: ${formatDay(bestSleep.day)} — ${formatSleepHours(bestSleep.sleepMin)}.`);
   return out;
 }
 
@@ -176,15 +214,11 @@ function diffText(value: number, unit: string) {
 
 function diffTextDuration(value: number) {
   if (value === 0) return 'без промяна';
-  return value > 0 ? `+${formatDuration(value)}` : `-${formatDuration(Math.abs(value))}`;
+  return value > 0 ? `+${formatSleepHours(value)}` : `-${formatSleepHours(Math.abs(value))}`;
 }
 
-function formatDuration(minutes: number) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h <= 0) return `${m}м`;
-  if (m === 0) return `${h}ч`;
-  return `${h}ч ${m}м`;
+function formatSleepHours(minutes: number) {
+  return `${(minutes / 60).toFixed(2)}ч`;
 }
 
 function formatDay(day: string) {

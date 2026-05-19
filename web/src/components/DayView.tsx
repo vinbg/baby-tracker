@@ -462,11 +462,7 @@ function sleepMinutes(item: SleepSession) {
 }
 
 function formatDuration(minutes: number) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h <= 0) return `${m}м`;
-  if (m === 0) return `${h}ч`;
-  return `${h}ч ${m}м`;
+  return `${(minutes / 60).toFixed(2)}ч`;
 }
 
 function isoFromDayAndTime(day: string, hour: number, minute: number): string {
