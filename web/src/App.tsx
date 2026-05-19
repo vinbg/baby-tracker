@@ -174,24 +174,11 @@ function ThemeSwitch({ theme, onToggle }: { theme: 'light' | 'dark'; onToggle: (
     <button
       type="button"
       onClick={onToggle}
-      role="switch"
-      aria-checked={dark}
       aria-label={dark ? 'Превключи към светла тема' : 'Превключи към тъмна тема'}
       title={dark ? 'Светла тема' : 'Тъмна тема'}
-      className={`relative shrink-0 h-9 w-16 rounded-full border-2 p-1 shadow-sm transition-colors active:scale-[0.98] ${
-        dark
-          ? 'bg-[oklch(0.18_0.02_280)] border-[oklch(0.18_0.02_280)]'
-          : 'bg-[var(--color-brand)] border-[var(--color-brand)]'
-      }`}
+      className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink-dim)] shadow-sm transition hover:border-[var(--color-brand)] hover:text-[var(--color-brand)] active:scale-[0.96]"
     >
-      <span className={`absolute inset-y-0 flex items-center transition-all ${dark ? 'left-2 text-white' : 'left-3 text-white'}`}>
-        {dark ? <Moon size={16} fill="currentColor" /> : <Sun size={17} fill="currentColor" />}
-      </span>
-      <span
-        className={`absolute top-1 h-6.5 w-6.5 rounded-full bg-white shadow-md transition-transform ${
-          dark ? 'translate-x-7' : 'translate-x-0'
-        }`}
-      />
+      {dark ? <Sun size={17} /> : <Moon size={17} />}
     </button>
   );
 }
