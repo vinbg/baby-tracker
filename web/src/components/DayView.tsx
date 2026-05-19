@@ -321,9 +321,17 @@ function SleepEntry({ day, onDone }: { day: string; onDone: () => void }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} compact showNow={false} />
-        <span className="text-xs text-[var(--color-muted)] font-bold">→</span><TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} compact showNow={false} />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Начало">
+          <div className="flex justify-center">
+            <TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} showNow={false} />
+          </div>
+        </Field>
+        <Field label={crossesMidnight ? 'Край (следв. ден)' : 'Край'}>
+          <div className="flex justify-center">
+            <TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} showNow={false} />
+          </div>
+        </Field>
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
       {crossesMidnight && <p className="text-xs text-[var(--color-muted)]">Краят е преди началото, затова ще се запише като сън през нощта до следващия ден.</p>}
