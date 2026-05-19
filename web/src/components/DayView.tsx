@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, Bed, Clock, Droplets, Milk, Sparkles, Trash2 } from 'lucide-react';
+import { BarChart3, Bed, Check, Clock, Droplets, Milk, Pencil, Sparkles, Trash2, X } from 'lucide-react';
 import { api, type Diaper, type DiaperKind, type Feeding, type SleepSession } from '../lib/api';
 import { fmtTime, parseTimestamp } from '../lib/utils';
 import { ForecastList } from './ForecastList';
@@ -335,29 +335,39 @@ function SleepEntry({ day, onDone }: { day: string; onDone: () => void }) {
 }
 
 function DiaperEntry({ day, onDone }: { day: string; onDone: () => void }) {
+  const now = new Date();
+  const [hour, setHour] = useState(now.getHours());
+  const [minute, setMinute] = useState(now.getMinutes());
+
   const add = useMutation({
-    mutationFn: (kind: DiaperKind) => api.addDiaper({ day, kind, loggedAt: nowForDay(day) }),
+    mutationFn: (kind: DiaperKind) => api.addDiaper({ day, kind, loggedAt: isoFromDayAndTime(day, hour, minute) }),
     onSuccess: onDone,
   });
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <button type="button" onClick={() => add.mutate('wet')} disabled={add.isPending} className="h-20 rounded-2xl bg-[var(--color-night-bg)] text-[var(--color-night-fg)] font-extrabold active:scale-[0.98] transition disabled:opacity-50">
-        <span className="block text-3xl">💧</span> Мокър
-      </button>
-      <button type="button" onClick={() => add.mutate('dirty')} disabled={add.isPending} className="h-20 rounded-2xl bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)] font-extrabold active:scale-[0.98] transition disabled:opacity-50">
-        <span className="block text-3xl">💩</span> Мръсен
-      </button>
+    <div className="space-y-3">
+      <Field label="Час">
+        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={() => add.mutate('wet')} disabled={add.isPending} className="h-20 rounded-2xl bg-[var(--color-night-bg)] text-[var(--color-night-fg)] font-extrabold active:scale-[0.98] transition disabled:opacity-50">
+          <span className="block text-3xl">💧</span> Мокър
+        </button>
+        <button type="button" onClick={() => add.mutate('dirty')} disabled={add.isPending} className="h-20 rounded-2xl bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)] font-extrabold active:scale-[0.98] transition disabled:opacity-50">
+          <span className="block text-3xl">💩</span> Мръсен
+        </button>
+      </div>
     </div>
   );
 }
 
 function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDeleted }: { day: string; feedings: Feeding[]; diapers: Diaper[]; sleeps: SleepSession[]; note: string; loading: boolean; onDeleted: () => void }) {
+  const [editingDiaperId, setEditingDiaperId] = useState<number | null>(null);
   const items = useMemo(() => {
     const rows: TimelineItem[] = [
       ...feedings.map((f) => ({ type: 'feeding' as const, id: f.id, at: f.fedAt, title: 'Хранене', subtitle: f.durationMin ? `${f.durationMin} мин` : 'без времетраене', badge: `${f.amountMl} мл`, icon: '🍼' })),
       ...sleeps.map((s) => ({ type: 'sleep' as const, id: s.id, at: s.startAt, title: 'Сън', subtitle: `${fmtTime(s.startAt)} — ${s.endAt ? fmtTime(s.endAt) : '—'}`, badge: formatDuration(sleepMinutes(s)), icon: '😴' })),
-      ...diapers.map((d) => ({ type: 'diaper' as const, id: d.id, at: d.loggedAt, title: 'Памперс', subtitle: d.kind === 'wet' ? 'мокър' : 'мръсен', badge: d.kind === 'wet' ? '💧' : '💩', icon: d.kind === 'wet' ? '💧' : '💩' })),
+      ...diapers.map((d) => ({ type: 'diaper' as const, id: d.id, at: d.loggedAt, title: 'Памперс', subtitle: d.kind === 'wet' ? 'мокър' : 'мръсен', badge: d.kind === 'wet' ? '💧' : '💩', icon: d.kind === 'wet' ? '💧' : '💩', kind: d.kind })),
     ];
     if (note.trim()) rows.push({ type: 'note' as const, id: 0, at: `${day}T12:00:00`, title: 'Бележка', subtitle: note.trim(), badge: '📝', icon: '📝' });
     return rows.sort((a, b) => parseTimestamp(b.at).getTime() - parseTimestamp(a.at).getTime());
@@ -390,25 +400,108 @@ function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDelete
         </div>
       ) : (
         <ul className="divide-y divide-[var(--color-line)]">
-          {items.map((item) => (
-            <li key={`${item.type}-${item.id}`} className="px-4 py-3 flex items-center gap-3 group">
-              <div className="w-12 shrink-0 text-sm font-extrabold tabular-nums">{fmtTime(item.at)}</div>
-              <div className="w-9 h-9 shrink-0 rounded-2xl bg-[var(--color-surface-2)] grid place-items-center text-lg">{item.icon}</div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold">{item.title}</div>
-                <div className="text-xs text-[var(--color-muted)] truncate">{item.subtitle}</div>
-              </div>
-              <div className="rounded-full bg-[var(--color-brand-soft)] px-2.5 py-1 text-xs font-extrabold text-[var(--color-brand-strong)] tabular-nums">{item.badge}</div>
-              {item.type !== 'note' && (
-                <button type="button" onClick={() => deleteItem(item)} className="w-9 h-9 hidden sm:inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-red-600 hover:bg-[var(--color-surface-2)] sm:opacity-40 sm:group-hover:opacity-100 transition" aria-label="изтрий">
-                  <Trash2 size={15} />
-                </button>
-              )}
-            </li>
-          ))}
+          {items.map((item) => {
+            if (item.type === 'diaper' && editingDiaperId === item.id) {
+              const diaper = diapers.find((d) => d.id === item.id);
+              if (diaper) {
+                return (
+                  <EditDiaperTimelineRow
+                    key={`${item.type}-${item.id}`}
+                    day={day}
+                    diaper={diaper}
+                    onCancel={() => setEditingDiaperId(null)}
+                    onSaved={() => {
+                      setEditingDiaperId(null);
+                      onDeleted();
+                    }}
+                  />
+                );
+              }
+            }
+            return (
+              <li key={`${item.type}-${item.id}`} className="px-4 py-3 flex items-center gap-3 group">
+                <div className="w-12 shrink-0 text-sm font-extrabold tabular-nums">{fmtTime(item.at)}</div>
+                <div className="w-9 h-9 shrink-0 rounded-2xl bg-[var(--color-surface-2)] grid place-items-center text-lg">{item.icon}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold">{item.title}</div>
+                  <div className="text-xs text-[var(--color-muted)] truncate">{item.subtitle}</div>
+                </div>
+                <div className="rounded-full bg-[var(--color-brand-soft)] px-2.5 py-1 text-xs font-extrabold text-[var(--color-brand-strong)] tabular-nums">{item.badge}</div>
+                {item.type === 'diaper' && (
+                  <button type="button" onClick={() => setEditingDiaperId(item.id)} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] transition" aria-label="редактирай">
+                    <Pencil size={15} />
+                  </button>
+                )}
+                {item.type !== 'note' && (
+                  <button type="button" onClick={() => deleteItem(item)} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-red-600 hover:bg-[var(--color-surface-2)] transition" aria-label="изтрий">
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>
+  );
+}
+
+
+function EditDiaperTimelineRow({
+  day,
+  diaper,
+  onCancel,
+  onSaved,
+}: {
+  day: string;
+  diaper: Diaper;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const at = parseTimestamp(diaper.loggedAt);
+  const [hour, setHour] = useState(at.getHours());
+  const [minute, setMinute] = useState(at.getMinutes());
+  const [kind, setKind] = useState<DiaperKind>(diaper.kind);
+
+  const save = useMutation({
+    mutationFn: () => api.patchDiaper(diaper.id, {
+      day,
+      loggedAt: isoFromDayAndTime(day, hour, minute),
+      kind,
+    }),
+    onSuccess: onSaved,
+  });
+
+  return (
+    <li className="px-4 py-3 bg-[var(--color-input-bg)]/40 space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-xl border border-[var(--color-line)] overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setKind('wet')}
+            className={`px-3 h-11 text-sm font-extrabold ${kind === 'wet' ? 'bg-[var(--color-night-bg)] text-[var(--color-night-fg)]' : 'text-[var(--color-muted)] bg-[var(--color-surface)]'}`}
+          >
+            💧 Мокър
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind('dirty')}
+            className={`px-3 h-11 text-sm font-extrabold border-l border-[var(--color-line)] ${kind === 'dirty' ? 'bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)]' : 'text-[var(--color-muted)] bg-[var(--color-surface)]'}`}
+          >
+            💩 Мръсен
+          </button>
+        </div>
+        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
+        <div className="ml-auto flex items-center gap-1">
+          <button type="button" onClick={() => save.mutate()} disabled={save.isPending} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] disabled:opacity-50" aria-label="запази">
+            <Check size={18} />
+          </button>
+          <button type="button" onClick={onCancel} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]" aria-label="отказ">
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -420,6 +513,7 @@ type TimelineItem = {
   subtitle: string;
   badge: string;
   icon: string;
+  kind?: DiaperKind;
 };
 
 function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
