@@ -353,16 +353,16 @@ function DiaperEntry({ day, onDone }: { day: string; onDone: () => void }) {
   });
 
   return (
-    <div className="space-y-3">
-      <Field label="Час">
-        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
-      </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <button type="button" onClick={() => add.mutate('wet')} disabled={add.isPending} className="h-20 rounded-2xl bg-[var(--color-night-bg)] text-[var(--color-night-fg)] font-extrabold active:scale-[0.98] transition disabled:opacity-50">
-          <span className="block text-3xl">💧</span> Мокър
+    <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-input-bg)]/40 p-3">
+      <div className="flex items-center gap-2 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+        <div className="shrink-0">
+          <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} compact showNow={false} />
+        </div>
+        <button type="button" onClick={() => add.mutate('wet')} disabled={add.isPending} className="shrink-0 h-10 px-3 rounded-xl bg-[var(--color-night-bg)] text-[var(--color-night-fg)] text-sm font-extrabold inline-flex items-center gap-1.5 active:scale-[0.98] transition disabled:opacity-50">
+          <span className="text-lg">💧</span> Мокър
         </button>
-        <button type="button" onClick={() => add.mutate('dirty')} disabled={add.isPending} className="h-20 rounded-2xl bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)] font-extrabold active:scale-[0.98] transition disabled:opacity-50">
-          <span className="block text-3xl">💩</span> Мръсен
+        <button type="button" onClick={() => add.mutate('dirty')} disabled={add.isPending} className="shrink-0 h-10 px-3 rounded-xl bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)] text-sm font-extrabold inline-flex items-center gap-1.5 active:scale-[0.98] transition disabled:opacity-50">
+          <span className="text-lg">💩</span> Мръсен
         </button>
       </div>
     </div>
