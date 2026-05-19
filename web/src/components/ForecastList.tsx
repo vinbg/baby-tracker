@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Moon, BedDouble, ArrowRight } from 'lucide-react';
 import type { ForecastSlot } from '../lib/api';
 import { fmtTime } from '../lib/utils';
@@ -11,7 +11,13 @@ type Props = {
 };
 
 export function ForecastList({ forecast, bedtimeFeedTime, lastFeedTime, onPickSlot }: Props) {
-  const now = useMemo(() => Date.now(), [forecast]);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, [forecast]);
 
   if (forecast.length === 0) {
     return (
