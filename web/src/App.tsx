@@ -7,6 +7,7 @@ import { useTheme } from './lib/theme';
 import { CalendarPanel } from './components/CalendarPanel';
 import { DayView } from './components/DayView';
 import { TrendsView } from './components/TrendsView';
+import { RecommendationsCard } from './components/RecommendationsCard';
 
 function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState('veli');
@@ -135,6 +136,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
               daysWithData={recentDays.data?.map((r) => r.day) ?? []}
               birthDate={baby.data?.birthDate}
             />
+            {baby.data && <div className="mt-3"><RecommendationsCard day={day} /></div>}
           </div>
         </details>
       </div>
@@ -147,6 +149,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             daysWithData={recentDays.data?.map((r) => r.day) ?? []}
             birthDate={baby.data?.birthDate}
           />
+          {baby.data && <RecommendationsCard day={day} />}
         </aside>
 
         <section className="min-w-0">

@@ -5,7 +5,6 @@ import { api, type Diaper, type DiaperKind, type Feeding, type SleepSession } fr
 import { fmtTime, parseTimestamp } from '../lib/utils';
 import { ForecastList } from './ForecastList';
 import { NotesEditor } from './NotesEditor';
-import { RecommendationsCard } from './RecommendationsCard';
 import { TimePicker } from './TimePicker';
 
 type EntryTab = 'feeding' | 'sleep' | 'diaper' | 'note';
@@ -94,8 +93,6 @@ export function DayView({ day, onOpenTrends }: Props) {
               }}
             />
           </div>
-
-          <RecommendationsCard day={day} />
         </div>
       </div>
     </div>
