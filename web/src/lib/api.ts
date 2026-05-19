@@ -91,6 +91,32 @@ export type SleepSession = {
   createdAt: string;
 };
 
+
+export type TrendDay = {
+  day: string;
+  feedingMl: number;
+  feedingCount: number;
+  avgFeedMl: number | null;
+  sleepMin: number;
+  sleepCount: number;
+  wetCount: number;
+  dirtyCount: number;
+  note: string | null;
+};
+
+export type Trends = {
+  days: number;
+  rows: TrendDay[];
+  summary: {
+    trackedDays: number;
+    avgDailyMl: number;
+    avgDailySleepMin: number;
+    avgDailyWet: number;
+    avgDailyDirty: number;
+    todayVsYesterday: null | { feedingMl: number; sleepMin: number; wet: number; dirty: number };
+  };
+};
+
 const AUTH_STORAGE_KEY = 'baby-feeding-auth-token';
 
 export function getAuthToken() {
@@ -134,6 +160,7 @@ export const api = {
   baby: () => authFetch('/api/baby').then(j<{ name: string; birthDate: string }>),
   feedings: (day: string) => authFetch(`/api/feedings?day=${day}`).then(j<Feeding[]>),
   recentDays: () => authFetch('/api/feedings/recent-days?limit=120').then(j<DayTotal[]>),
+  trends: (days = 14) => authFetch(`/api/trends?days=${days}`).then(j<Trends>),
   rec: (day: string) => authFetch(`/api/recommendations?day=${day}`).then(j<DayRecommendation>),
   note: (day: string) => authFetch(`/api/notes/${day}`).then(j<DayNote>),
   saveNote: (day: string, note: string) =>

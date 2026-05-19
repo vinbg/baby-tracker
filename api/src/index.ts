@@ -253,6 +253,88 @@ app.delete('/api/sleeps/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+
+// GET /api/trends?days=14 — daily totals for trend analysis.
+app.get('/api/trends', async (c) => {
+  const rawDays = Number(c.req.query('days') ?? 14);
+  const days = Number.isFinite(rawDays) ? Math.min(60, Math.max(3, Math.round(rawDays))) : 14;
+  const rows = await db.execute<{
+    day: string;
+    "feedingMl": number;
+    "feedingCount": number;
+    "avgFeedMl": number | null;
+    "sleepMin": number;
+    "sleepCount": number;
+    "wetCount": number;
+    "dirtyCount": number;
+    note: string | null;
+  }>(sql`
+    WITH dates AS (
+      SELECT generate_series(
+        (current_date - (${days}::int - 1) * interval '1 day')::date,
+        current_date,
+        interval '1 day'
+      )::date AS day
+    ), feeding AS (
+      SELECT day, COALESCE(SUM(amount_ml), 0)::int AS feeding_ml, COUNT(*)::int AS feeding_count,
+             ROUND(AVG(amount_ml))::int AS avg_feed_ml
+      FROM feedings
+      GROUP BY day
+    ), sleep AS (
+      SELECT day,
+             COALESCE(SUM(EXTRACT(EPOCH FROM (end_at - start_at)) / 60), 0)::int AS sleep_min,
+             COUNT(*)::int AS sleep_count
+      FROM sleep_sessions
+      WHERE end_at IS NOT NULL
+      GROUP BY day
+    ), diaper AS (
+      SELECT day,
+             COUNT(*) FILTER (WHERE kind = 'wet')::int AS wet_count,
+             COUNT(*) FILTER (WHERE kind = 'dirty')::int AS dirty_count
+      FROM diapers
+      GROUP BY day
+    )
+    SELECT d.day::text AS day,
+           COALESCE(f.feeding_ml, 0)::int AS "feedingMl",
+           COALESCE(f.feeding_count, 0)::int AS "feedingCount",
+           f.avg_feed_ml::int AS "avgFeedMl",
+           COALESCE(s.sleep_min, 0)::int AS "sleepMin",
+           COALESCE(s.sleep_count, 0)::int AS "sleepCount",
+           COALESCE(di.wet_count, 0)::int AS "wetCount",
+           COALESCE(di.dirty_count, 0)::int AS "dirtyCount",
+           NULLIF(n.note, '') AS note
+    FROM dates d
+    LEFT JOIN feeding f ON f.day = d.day
+    LEFT JOIN sleep s ON s.day = d.day
+    LEFT JOIN diaper di ON di.day = d.day
+    LEFT JOIN day_notes n ON n.day = d.day
+    ORDER BY d.day ASC
+  `);
+
+  const filled = rows.filter((r) => r.feedingCount > 0 || r.sleepCount > 0 || r.wetCount > 0 || r.dirtyCount > 0 || !!r.note);
+  const avg = (vals: number[]) => vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+  const last = rows.at(-1) ?? null;
+  const prev = rows.length > 1 ? rows[rows.length - 2] : null;
+
+  return c.json({
+    days,
+    rows,
+    summary: {
+      trackedDays: filled.length,
+      avgDailyMl: avg(filled.map((r) => r.feedingMl).filter((v) => v > 0)),
+      avgDailySleepMin: avg(filled.map((r) => r.sleepMin).filter((v) => v > 0)),
+      avgDailyWet: avg(filled.map((r) => r.wetCount).filter((v) => v > 0)),
+      avgDailyDirty: avg(filled.map((r) => r.dirtyCount).filter((v) => v > 0)),
+      todayVsYesterday: last && prev ? {
+        feedingMl: last.feedingMl - prev.feedingMl,
+        sleepMin: last.sleepMin - prev.sleepMin,
+        wet: last.wetCount - prev.wetCount,
+        dirty: last.dirtyCount - prev.dirtyCount,
+      } : null,
+    },
+  });
+});
+
 // GET /api/notes/:day
 app.get('/api/notes/:day', async (c) => {
   const day = c.req.param('day');

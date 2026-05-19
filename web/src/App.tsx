@@ -7,6 +7,7 @@ import { useTheme } from './lib/theme';
 import { CalendarPanel } from './components/CalendarPanel';
 import { DayView } from './components/DayView';
 import { RecommendationsCard } from './components/RecommendationsCard';
+import { TrendsView } from './components/TrendsView';
 
 function LoginPage({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState('veli');
@@ -76,6 +77,7 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [selected, setSelected] = useState<Date>(() => new Date());
+  const [view, setView] = useState<'today' | 'days' | 'trends' | 'plan'>('today');
   const day = dayKey(selected);
   const { theme, toggle } = useTheme();
 
@@ -150,7 +152,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         </aside>
 
         <section className="min-w-0">
-          <DayView day={day} />
+          {view === 'trends' ? <TrendsView /> : <DayView day={day} />}
         </section>
 
         {baby.data && (
@@ -160,7 +162,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         )}
       </main>
 
-      <MobileBottomNav />
+      <MobileBottomNav view={view} onChange={setView} />
 
       <footer className="text-center text-[11px] sm:text-xs text-[var(--color-muted)] px-4 pt-6 pb-24 lg:pb-6">
         Препоръката е от опаковката HiPP Combiotic 1. Реалните дози са в "Моят план". Винаги следвай педиатър.
@@ -238,12 +240,12 @@ function DateStrip({ selected, onSelect, birthDate }: { selected: Date; onSelect
   );
 }
 
-function MobileBottomNav() {
-  const items = [
-    { icon: <Home size={19} />, label: 'Днес', active: true },
-    { icon: <CalendarDays size={19} />, label: 'Дни' },
-    { icon: <BarChart3 size={19} />, label: 'Тренд' },
-    { icon: <Settings size={19} />, label: 'План' },
+function MobileBottomNav({ view, onChange }: { view: 'today' | 'days' | 'trends' | 'plan'; onChange: (view: 'today' | 'days' | 'trends' | 'plan') => void }) {
+  const items: Array<{ icon: React.ReactNode; label: string; id: 'today' | 'days' | 'trends' | 'plan' }> = [
+    { icon: <Home size={19} />, label: 'Днес', id: 'today' },
+    { icon: <CalendarDays size={19} />, label: 'Дни', id: 'days' },
+    { icon: <BarChart3 size={19} />, label: 'Тренд', id: 'trends' },
+    { icon: <Settings size={19} />, label: 'План', id: 'plan' },
   ];
   return (
     <nav className="lg:hidden fixed left-3 right-3 bottom-3 z-20 rounded-[1.6rem] border border-[var(--color-line)] bg-[var(--color-surface)]/90 backdrop-blur-xl shadow-[var(--shadow-soft)] p-2 grid grid-cols-4 gap-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
@@ -251,7 +253,8 @@ function MobileBottomNav() {
         <button
           key={item.label}
           type="button"
-          className={`rounded-2xl py-2 text-[11px] font-bold flex flex-col items-center gap-1 ${item.active ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}
+          onClick={() => onChange(item.id)}
+          className={`rounded-2xl py-2 text-[11px] font-bold flex flex-col items-center gap-1 ${view === item.id ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}
         >
           {item.icon}
           {item.label}

@@ -58,6 +58,7 @@ Creates a completed sleep entry.
 {
   "day": "2026-05-19",
   "startAt": "2026-05-19T10:30:00.000Z",
+  "endAt": "2026-05-19T11:15:00.000Z",
   "note": "optional"
 }
 ```
@@ -93,3 +94,27 @@ Create body:
 - `GET /api/settings`
 - `PUT /api/settings`
 - `GET /api/recommendations?day=YYYY-MM-DD`
+
+## Trends
+
+### `GET /api/trends?days=14`
+
+Returns daily aggregates for trend analysis. `days` is clamped to 3–60.
+
+Each row includes:
+
+```json
+{
+  "day": "2026-05-19",
+  "feedingMl": 720,
+  "feedingCount": 6,
+  "avgFeedMl": 120,
+  "sleepMin": 420,
+  "sleepCount": 4,
+  "wetCount": 5,
+  "dirtyCount": 1,
+  "note": "optional daily note"
+}
+```
+
+The response also contains summary averages and today-vs-yesterday deltas.
