@@ -1,11 +1,11 @@
-// Forecast the remaining feedings of the day.
+// Forecast the remaining feedings of the selected calendar day.
 //
 // Two anchored slots:
-//   - bedtimeFeedTime — the last feed before sleep (slight bump: ~8%)
-//   - lastFeedTime    — the actual middle-of-the-night feed; if its HH:MM
-//                       is before wakeTime it's interpreted as next-day.
-//                       Biggest bump (~18%) — the "dream feed".
-// Other slots are spread between earliestNext and bedtime.
+//   - lastFeedTime    — the middle-of-the-night feed for the SAME selected day.
+//                       If it is 03:00, it is the first feeding of that day,
+//                       not the last feeding of the previous day.
+//   - bedtimeFeedTime — the last feed before the long sleep stretch.
+// Other slots are spread between the next due feeding and bedtime.
 
 export type ForecastSlotKind = 'regular' | 'bedtime' | 'night';
 
@@ -44,9 +44,9 @@ export function buildForecast(input: BuildForecastInput): ForecastSlot[] {
 
   const wakeAt = anchorToDay(day, wakeTime);
   const bedtimeAt = anchorToDay(day, bedtimeFeedTime);
-  // If the night-feed clock-time is before wake, it's the actual mid-night feed
-  // and belongs to the next calendar day.
-  const nightAt = anchorToDay(day, lastFeedTime, { rollIfBefore: wakeTime });
+  // Night feed belongs to the selected calendar day. Example: for 2026-05-19,
+  // 03:00 means 2026-05-19 03:00 and should sort before daytime feeds.
+  const nightAt = anchorToDay(day, lastFeedTime);
 
   const earliestNext = lastFedAt
     ? addHours(new Date(lastFedAt), intervalHours)
@@ -83,11 +83,16 @@ export function buildForecast(input: BuildForecastInput): ForecastSlot[] {
     return [make(at, 'night', null)];
   }
 
-  // 2 left → bedtime + night.
+  // 2 left → night + bedtime when the night feed is still relevant for the
+  // selected day; otherwise just keep the remaining order after earliestNext.
   if (remainingFeeds === 2) {
     const bedtime = snapTo5Min(maxDate(earliestNext, bedtimeAt));
-    const night = snapTo5Min(maxDate(addHours(bedtime, intervalHours * MIN_GAP_RATIO), nightAt));
-    return [make(bedtime, 'bedtime', null), make(night, 'night', bedtime)];
+    const night = snapTo5Min(
+      nightAt.getTime() < bedtimeAt.getTime()
+        ? nightAt
+        : maxDate(addHours(bedtime, intervalHours * MIN_GAP_RATIO), nightAt),
+    );
+    return sortSlots([make(night, 'night', null), make(bedtime, 'bedtime', night)]);
   }
 
   // 3+ → spread (n-2) between earliestNext and bedtime, then bedtime, then night.
@@ -112,7 +117,9 @@ export function buildForecast(input: BuildForecastInput): ForecastSlot[] {
     maxDate(addHours(lastRegular, intervalHours * MIN_GAP_RATIO), bedtimeAt),
   );
   const night = snapTo5Min(
-    maxDate(addHours(bedtime, intervalHours * MIN_GAP_RATIO), nightAt),
+    nightAt.getTime() < bedtimeAt.getTime()
+      ? nightAt
+      : maxDate(addHours(bedtime, intervalHours * MIN_GAP_RATIO), nightAt),
   );
 
   const out: ForecastSlot[] = [];
@@ -122,8 +129,12 @@ export function buildForecast(input: BuildForecastInput): ForecastSlot[] {
     prev = at;
   }
   out.push(make(bedtime, 'bedtime', prev));
-  out.push(make(night, 'night', bedtime));
-  return out;
+  out.push(make(night, 'night', null));
+  return sortSlots(out);
+}
+
+function sortSlots(slots: ForecastSlot[]): ForecastSlot[] {
+  return [...slots].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
 function snapTo5Min(at: Date): Date {
