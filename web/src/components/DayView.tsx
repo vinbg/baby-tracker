@@ -54,15 +54,17 @@ export function DayView({ day, onOpenTrends }: Props) {
 
       <QuickActions active={tab} onPick={setTab} />
 
-      <EntryPanel
-        day={day}
-        active={tab}
-        suggestedMl={rec.data?.suggestedNextMl ?? rec.data?.plan.perFeedMl ?? 135}
-        onDone={invalidateDay}
-        feedingPrefill={feedingPrefill}
-      />
-
-      {tab === 'note' && <NotesEditor day={day} />}
+      {tab === 'note' ? (
+        <NotesEditor day={day} />
+      ) : (
+        <EntryPanel
+          day={day}
+          active={tab}
+          suggestedMl={rec.data?.suggestedNextMl ?? rec.data?.plan.perFeedMl ?? 135}
+          onDone={invalidateDay}
+          feedingPrefill={feedingPrefill}
+        />
+      )}
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
         <DailyTimeline
@@ -225,11 +227,7 @@ function EntryPanel({
       {active === 'feeding' && <FeedingEntry day={day} suggestedMl={suggestedMl} prefill={feedingPrefill} onDone={onDone} />}
       {active === 'sleep' && <SleepEntry day={day} onDone={onDone} />}
       {active === 'diaper' && <DiaperEntry day={day} onDone={onDone} />}
-      {active === 'note' && (
-        <div className="rounded-2xl border border-dashed border-[var(--color-line)] bg-[var(--color-input-bg)] p-4 text-sm text-[var(--color-muted)]">
-          Бележките са отворени под панела и се запазват автоматично.
-        </div>
-      )}
+
     </section>
   );
 }
