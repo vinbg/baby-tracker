@@ -362,7 +362,7 @@ function DiaperEntry({ day, onDone }: { day: string; onDone: () => void }) {
 }
 
 function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDeleted }: { day: string; feedings: Feeding[]; diapers: Diaper[]; sleeps: SleepSession[]; note: string; loading: boolean; onDeleted: () => void }) {
-  const [editingDiaperId, setEditingDiaperId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<{ type: 'feeding' | 'sleep' | 'diaper'; id: number } | null>(null);
   const items = useMemo(() => {
     const rows: TimelineItem[] = [
       ...feedings.map((f) => ({ type: 'feeding' as const, id: f.id, at: f.fedAt, title: 'Хранене', subtitle: f.durationMin ? `${f.durationMin} мин` : 'без времетраене', badge: `${f.amountMl} мл`, icon: '🍼' })),
@@ -401,19 +401,40 @@ function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDelete
       ) : (
         <ul className="divide-y divide-[var(--color-line)]">
           {items.map((item) => {
-            if (item.type === 'diaper' && editingDiaperId === item.id) {
-              const diaper = diapers.find((d) => d.id === item.id);
-              if (diaper) {
-                return (
+            if (editing?.id === item.id && editing.type === item.type) {
+              if (item.type === 'feeding') {
+                const feeding = feedings.find((f) => f.id === item.id);
+                if (feeding) return (
+                  <EditFeedingTimelineRow
+                    key={`${item.type}-${item.id}`}
+                    day={day}
+                    feeding={feeding}
+                    onCancel={() => setEditing(null)}
+                    onSaved={() => { setEditing(null); onDeleted(); }}
+                  />
+                );
+              }
+              if (item.type === 'sleep') {
+                const sleep = sleeps.find((s) => s.id === item.id);
+                if (sleep) return (
+                  <EditSleepTimelineRow
+                    key={`${item.type}-${item.id}`}
+                    day={day}
+                    sleep={sleep}
+                    onCancel={() => setEditing(null)}
+                    onSaved={() => { setEditing(null); onDeleted(); }}
+                  />
+                );
+              }
+              if (item.type === 'diaper') {
+                const diaper = diapers.find((d) => d.id === item.id);
+                if (diaper) return (
                   <EditDiaperTimelineRow
                     key={`${item.type}-${item.id}`}
                     day={day}
                     diaper={diaper}
-                    onCancel={() => setEditingDiaperId(null)}
-                    onSaved={() => {
-                      setEditingDiaperId(null);
-                      onDeleted();
-                    }}
+                    onCancel={() => setEditing(null)}
+                    onSaved={() => { setEditing(null); onDeleted(); }}
                   />
                 );
               }
@@ -427,8 +448,8 @@ function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDelete
                   <div className="text-xs text-[var(--color-muted)] truncate">{item.subtitle}</div>
                 </div>
                 <div className="rounded-full bg-[var(--color-brand-soft)] px-2.5 py-1 text-xs font-extrabold text-[var(--color-brand-strong)] tabular-nums">{item.badge}</div>
-                {item.type === 'diaper' && (
-                  <button type="button" onClick={() => setEditingDiaperId(item.id)} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] transition" aria-label="редактирай">
+                {item.type !== 'note' && (
+                  <button type="button" onClick={() => setEditing({ type: item.type as 'feeding' | 'sleep' | 'diaper', id: item.id })} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] transition" aria-label="редактирай">
                     <Pencil size={15} />
                   </button>
                 )}
@@ -446,6 +467,92 @@ function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDelete
   );
 }
 
+
+
+function EditFeedingTimelineRow({
+  day,
+  feeding,
+  onCancel,
+  onSaved,
+}: {
+  day: string;
+  feeding: Feeding;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const at = parseTimestamp(feeding.fedAt);
+  const [hour, setHour] = useState(at.getHours());
+  const [minute, setMinute] = useState(at.getMinutes());
+  const [amount, setAmount] = useState(String(feeding.amountMl));
+  const [duration, setDuration] = useState(feeding.durationMin != null ? String(feeding.durationMin) : '');
+
+  const save = useMutation({
+    mutationFn: () => {
+      const dn = Number(duration);
+      return api.patchFeeding(feeding.id, {
+        day,
+        fedAt: isoFromDayAndTime(day, hour, minute),
+        amountMl: Number(amount),
+        durationMin: duration === '' ? null : Number.isFinite(dn) && dn > 0 ? Math.round(dn) : null,
+      });
+    },
+    onSuccess: onSaved,
+  });
+
+  const valid = Number(amount) > 0 && Number(amount) <= 500;
+
+  return (
+    <li className="px-4 py-3 bg-[var(--color-input-bg)]/40 space-y-3">
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+        <Field label="Количество"><NumberInput value={amount} onChange={setAmount} suffix="мл" placeholder="135" /></Field>
+        <Field label="Час"><TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} /></Field>
+        <Field label="Времетраене"><NumberInput value={duration} onChange={setDuration} suffix="мин" placeholder="—" /></Field>
+        <EditActions onSave={() => valid && save.mutate()} onCancel={onCancel} disabled={!valid || save.isPending} />
+      </div>
+    </li>
+  );
+}
+
+function EditSleepTimelineRow({
+  day,
+  sleep,
+  onCancel,
+  onSaved,
+}: {
+  day: string;
+  sleep: SleepSession;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const start = parseTimestamp(sleep.startAt);
+  const end = sleep.endAt ? parseTimestamp(sleep.endAt) : new Date(start.getTime() + 60 * 60_000);
+  const [startHour, setStartHour] = useState(start.getHours());
+  const [startMinute, setStartMinute] = useState(start.getMinutes());
+  const [endHour, setEndHour] = useState(end.getHours());
+  const [endMinute, setEndMinute] = useState(end.getMinutes());
+
+  const save = useMutation({
+    mutationFn: () => {
+      const startAt = dateFor(day, startHour, startMinute);
+      const endAt = dateFor(day, endHour, endMinute);
+      if (endAt.getTime() <= startAt.getTime()) endAt.setDate(endAt.getDate() + 1);
+      return api.patchSleep(sleep.id, { day, startAt: startAt.toISOString(), endAt: endAt.toISOString() });
+    },
+    onSuccess: onSaved,
+  });
+
+  const crossesMidnight = dateFor(day, endHour, endMinute).getTime() <= dateFor(day, startHour, startMinute).getTime();
+
+  return (
+    <li className="px-4 py-3 bg-[var(--color-input-bg)]/40 space-y-3">
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <Field label="Начало"><TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} /></Field>
+        <Field label={crossesMidnight ? 'Край (следващ ден)' : 'Край'}><TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} /></Field>
+        <EditActions onSave={() => save.mutate()} onCancel={onCancel} disabled={save.isPending} />
+      </div>
+    </li>
+  );
+}
 
 function EditDiaperTimelineRow({
   day,
@@ -492,16 +599,23 @@ function EditDiaperTimelineRow({
           </button>
         </div>
         <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
-        <div className="ml-auto flex items-center gap-1">
-          <button type="button" onClick={() => save.mutate()} disabled={save.isPending} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] disabled:opacity-50" aria-label="запази">
-            <Check size={18} />
-          </button>
-          <button type="button" onClick={onCancel} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]" aria-label="отказ">
-            <X size={18} />
-          </button>
-        </div>
+<EditActions onSave={() => save.mutate()} onCancel={onCancel} disabled={save.isPending} />
       </div>
     </li>
+  );
+}
+
+
+function EditActions({ onSave, onCancel, disabled }: { onSave: () => void; onCancel: () => void; disabled?: boolean }) {
+  return (
+    <div className="ml-auto flex items-center gap-1">
+      <button type="button" onClick={onSave} disabled={disabled} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] disabled:opacity-50" aria-label="запази">
+        <Check size={18} />
+      </button>
+      <button type="button" onClick={onCancel} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]" aria-label="отказ">
+        <X size={18} />
+      </button>
+    </div>
   );
 }
 
