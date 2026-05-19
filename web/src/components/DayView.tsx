@@ -180,7 +180,7 @@ function QuickActions({ active, onPick }: { active: EntryTab; onPick: (tab: Entr
   const items: Array<{ id: EntryTab; label: string; icon: string; className: string }> = [
     { id: 'feeding', label: 'Храна', icon: '🍼', className: 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' },
     { id: 'sleep', label: 'Сън', icon: '😴', className: 'bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)]' },
-    { id: 'diaper', label: 'Памперс', icon: '💧', className: 'bg-[var(--color-night-bg)] text-[var(--color-night-fg)]' },
+    { id: 'diaper', label: 'Памперси', icon: '💧', className: 'bg-[var(--color-night-bg)] text-[var(--color-night-fg)]' },
     { id: 'note', label: 'Бележка', icon: '📝', className: 'bg-[var(--color-good)] text-[var(--color-ink)]' },
   ];
 
