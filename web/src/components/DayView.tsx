@@ -79,7 +79,7 @@ export function DayView({ day, onOpenTrends }: Props) {
         <div className="space-y-4">
           <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] overflow-hidden">
             <div className="px-4 py-3 border-b border-[var(--color-line)] flex items-center justify-between">
-              <h2 className="text-sm font-semibold flex items-center gap-2"><Sparkles size={16} /> Прогноза</h2>
+              <h2 className="text-sm font-semibold flex items-center gap-2"><Sparkles size={16} /> Прогноза за хранене</h2>
               <span className="text-xs text-[var(--color-muted)]">{rec.data ? `остават ${rec.data.remainingFeeds}` : ''}</span>
             </div>
             <ForecastList
@@ -378,7 +378,7 @@ function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDelete
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] overflow-hidden">
       <div className="px-4 py-3 border-b border-[var(--color-line)] flex items-center justify-between">
-        <h2 className="text-sm font-semibold flex items-center gap-2"><Clock size={16} /> Дневна линия</h2>
+        <h2 className="text-sm font-semibold flex items-center gap-2"><Clock size={16} /> Записи за деня</h2>
         <span className="text-xs text-[var(--color-muted)]">най-новите отгоре</span>
       </div>
       {loading ? (
