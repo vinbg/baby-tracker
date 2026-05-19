@@ -16,7 +16,7 @@ export function TimePicker({ hour, minute, onChange, step = 5, compact = false, 
   const minuteSnap = Math.round(minute / step) * step % 60;
 
   const inputClass = compact
-    ? baseInput.replace('h-12 sm:h-10 w-14 sm:w-12 text-lg sm:text-base', 'h-10 w-11 text-sm')
+    ? baseInput.replace('h-12 sm:h-10 w-14 sm:w-12 text-lg sm:text-base', 'h-9 w-10 text-sm')
     : baseInput;
 
   return (

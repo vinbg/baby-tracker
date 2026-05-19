@@ -278,8 +278,8 @@ function FeedingEntry({ day, suggestedMl, prefill, onDone }: { day: string; sugg
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (valid) add.mutate(); }} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr]">
-        <InlineNumber value={amount} onChange={setAmount} suffix="мл" placeholder="135" className="w-17" />
-        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} compact showNow={false} />
+        <Field label="Количество"><NumberInput value={amount} onChange={setAmount} suffix="мл" placeholder="135" /></Field>
+        <Field label="Час"><TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} /></Field>
         <Field label="Времетраене (опц.)"><NumberInput value={duration} onChange={setDuration} suffix="мин" placeholder="—" /></Field>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -449,12 +449,12 @@ function DailyTimeline({ day, feedings, diapers, sleeps, note, loading, onDelete
                 </div>
                 <div className="rounded-full bg-[var(--color-brand-soft)] px-2.5 py-1 text-xs font-extrabold text-[var(--color-brand-strong)] tabular-nums">{item.badge}</div>
                 {item.type !== 'note' && (
-                  <button type="button" onClick={() => setEditing({ type: item.type as 'feeding' | 'sleep' | 'diaper', id: item.id })} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] transition" aria-label="редактирай">
+                  <button type="button" onClick={() => setEditing({ type: item.type as 'feeding' | 'sleep' | 'diaper', id: item.id })} className="w-8 h-8 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] transition" aria-label="редактирай">
                     <Pencil size={15} />
                   </button>
                 )}
                 {item.type !== 'note' && (
-                  <button type="button" onClick={() => deleteItem(item)} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-red-600 hover:bg-[var(--color-surface-2)] transition" aria-label="изтрий">
+                  <button type="button" onClick={() => deleteItem(item)} className="w-8 h-8 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-red-600 hover:bg-[var(--color-surface-2)] transition" aria-label="изтрий">
                     <Trash2 size={15} />
                   </button>
                 )}
@@ -503,10 +503,10 @@ function EditFeedingTimelineRow({
 
   return (
     <li className="px-3 py-2 bg-[var(--color-input-bg)]/40">
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-        <InlineNumber value={amount} onChange={setAmount} suffix="мл" placeholder="135" className="w-17" />
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+        <InlineNumber value={amount} onChange={setAmount} suffix="мл" placeholder="135" className="w-[4.75rem]" />
         <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} compact showNow={false} />
-        <InlineNumber value={duration} onChange={setDuration} suffix="м" placeholder="—" className="w-15" />
+        <InlineNumber value={duration} onChange={setDuration} suffix="м" placeholder="—" className="w-[4.25rem]" />
         <EditActions onSave={() => valid && save.mutate()} onCancel={onCancel} disabled={!valid || save.isPending} />
       </div>
     </li>
@@ -545,7 +545,7 @@ function EditSleepTimelineRow({
 
   return (
     <li className="px-3 py-2 bg-[var(--color-input-bg)]/40">
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
         <TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} compact showNow={false} />
         <span className="text-xs text-[var(--color-muted)] font-bold">→</span><TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} compact showNow={false} />
         <EditActions onSave={() => save.mutate()} onCancel={onCancel} disabled={save.isPending} />
@@ -581,7 +581,7 @@ function EditDiaperTimelineRow({
 
   return (
     <li className="px-3 py-2 bg-[var(--color-input-bg)]/40">
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
         <div className="inline-flex rounded-xl border border-[var(--color-line)] overflow-hidden">
           <button
             type="button"
@@ -609,11 +609,11 @@ function EditDiaperTimelineRow({
 function EditActions({ onSave, onCancel, disabled }: { onSave: () => void; onCancel: () => void; disabled?: boolean }) {
   return (
     <div className="ml-auto shrink-0 flex items-center gap-0.5">
-      <button type="button" onClick={onSave} disabled={disabled} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] disabled:opacity-50" aria-label="запази">
-        <Check size={16} />
+      <button type="button" onClick={onSave} disabled={disabled} className="w-8 h-8 inline-flex items-center justify-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] disabled:opacity-50" aria-label="запази">
+        <Check size={15} />
       </button>
-      <button type="button" onClick={onCancel} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]" aria-label="отказ">
-        <X size={16} />
+      <button type="button" onClick={onCancel} className="w-8 h-8 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]" aria-label="отказ">
+        <X size={15} />
       </button>
     </div>
   );
@@ -650,7 +650,7 @@ function InlineNumber({ value, onChange, suffix, placeholder, className = '' }: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-10 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] pl-2 pr-6 text-center text-sm font-extrabold tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/40 focus:border-[var(--color-brand)]"
+        className="w-full h-9 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] pl-2 pr-6 text-center text-sm font-extrabold tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/40 focus:border-[var(--color-brand)]"
       />
       <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-[var(--color-muted)]">{suffix}</span>
     </div>
