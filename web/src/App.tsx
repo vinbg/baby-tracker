@@ -182,19 +182,20 @@ function ThemeSwitch({ theme, onToggle }: { theme: 'light' | 'dark'; onToggle: (
       aria-checked={dark}
       aria-label={dark ? 'Превключи към светла тема' : 'Превключи към тъмна тема'}
       title={dark ? 'Светла тема' : 'Тъмна тема'}
-      className="shrink-0 inline-flex items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] p-1 shadow-sm transition hover:border-[var(--color-brand)]"
+      className={`relative shrink-0 h-9 w-16 rounded-full border-2 p-1 shadow-sm transition-colors active:scale-[0.98] ${
+        dark
+          ? 'bg-[oklch(0.18_0.02_280)] border-[oklch(0.18_0.02_280)]'
+          : 'bg-[var(--color-brand)] border-[var(--color-brand)]'
+      }`}
     >
-      <span className={`hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-full transition ${!dark ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}>
-        <Sun size={15} />
+      <span className={`absolute inset-y-0 flex items-center transition-all ${dark ? 'left-2 text-white' : 'left-3 text-white'}`}>
+        {dark ? <Moon size={16} fill="currentColor" /> : <Sun size={17} fill="currentColor" />}
       </span>
-      <span className="relative inline-flex h-8 w-14 items-center rounded-full bg-[var(--color-surface-2)] px-1">
-        <span className={`absolute h-6 w-6 rounded-full bg-[var(--color-brand)] shadow-md transition-transform ${dark ? 'translate-x-6' : 'translate-x-0'}`} />
-        <Sun size={13} className={`relative z-10 ml-1 transition ${dark ? 'text-[var(--color-muted)]' : 'text-white'}`} />
-        <Moon size={13} className={`relative z-10 ml-auto mr-1 transition ${dark ? 'text-white' : 'text-[var(--color-muted)]'}`} />
-      </span>
-      <span className={`hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-full transition ${dark ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}>
-        <Moon size={15} />
-      </span>
+      <span
+        className={`absolute top-1 h-6.5 w-6.5 rounded-full bg-white shadow-md transition-transform ${
+          dark ? 'translate-x-7' : 'translate-x-0'
+        }`}
+      />
     </button>
   );
 }
