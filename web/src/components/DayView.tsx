@@ -278,8 +278,8 @@ function FeedingEntry({ day, suggestedMl, prefill, onDone }: { day: string; sugg
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (valid) add.mutate(); }} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr]">
-        <Field label="Количество"><NumberInput value={amount} onChange={setAmount} suffix="мл" placeholder="135" /></Field>
-        <Field label="Час"><TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} /></Field>
+        <InlineNumber value={amount} onChange={setAmount} suffix="мл" placeholder="135" className="w-17" />
+        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} compact showNow={false} />
         <Field label="Времетраене (опц.)"><NumberInput value={duration} onChange={setDuration} suffix="мин" placeholder="—" /></Field>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -322,8 +322,8 @@ function SleepEntry({ day, onDone }: { day: string; onDone: () => void }) {
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Начало"><TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} /></Field>
-        <Field label={crossesMidnight ? 'Край (следващ ден)' : 'Край'}><TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} /></Field>
+        <TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} compact showNow={false} />
+        <span className="text-xs text-[var(--color-muted)] font-bold">→</span><TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} compact showNow={false} />
       </div>
       {error && <p className="text-sm text-red-500">{error}</p>}
       {crossesMidnight && <p className="text-xs text-[var(--color-muted)]">Краят е преди началото, затова ще се запише като сън през нощта до следващия ден.</p>}
@@ -502,11 +502,11 @@ function EditFeedingTimelineRow({
   const valid = Number(amount) > 0 && Number(amount) <= 500;
 
   return (
-    <li className="px-4 py-3 bg-[var(--color-input-bg)]/40 space-y-3">
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-        <Field label="Количество"><NumberInput value={amount} onChange={setAmount} suffix="мл" placeholder="135" /></Field>
-        <Field label="Час"><TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} /></Field>
-        <Field label="Времетраене"><NumberInput value={duration} onChange={setDuration} suffix="мин" placeholder="—" /></Field>
+    <li className="px-3 py-2 bg-[var(--color-input-bg)]/40">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <InlineNumber value={amount} onChange={setAmount} suffix="мл" placeholder="135" className="w-17" />
+        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} compact showNow={false} />
+        <InlineNumber value={duration} onChange={setDuration} suffix="м" placeholder="—" className="w-15" />
         <EditActions onSave={() => valid && save.mutate()} onCancel={onCancel} disabled={!valid || save.isPending} />
       </div>
     </li>
@@ -544,10 +544,10 @@ function EditSleepTimelineRow({
   const crossesMidnight = dateFor(day, endHour, endMinute).getTime() <= dateFor(day, startHour, startMinute).getTime();
 
   return (
-    <li className="px-4 py-3 bg-[var(--color-input-bg)]/40 space-y-3">
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-        <Field label="Начало"><TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} /></Field>
-        <Field label={crossesMidnight ? 'Край (следващ ден)' : 'Край'}><TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} /></Field>
+    <li className="px-3 py-2 bg-[var(--color-input-bg)]/40">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <TimePicker hour={startHour} minute={startMinute} onChange={(h, m) => { setStartHour(h); setStartMinute(m); }} compact showNow={false} />
+        <span className="text-xs text-[var(--color-muted)] font-bold">→</span><TimePicker hour={endHour} minute={endMinute} onChange={(h, m) => { setEndHour(h); setEndMinute(m); }} compact showNow={false} />
         <EditActions onSave={() => save.mutate()} onCancel={onCancel} disabled={save.isPending} />
       </div>
     </li>
@@ -580,26 +580,26 @@ function EditDiaperTimelineRow({
   });
 
   return (
-    <li className="px-4 py-3 bg-[var(--color-input-bg)]/40 space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+    <li className="px-3 py-2 bg-[var(--color-input-bg)]/40">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         <div className="inline-flex rounded-xl border border-[var(--color-line)] overflow-hidden">
           <button
             type="button"
             onClick={() => setKind('wet')}
-            className={`px-3 h-11 text-sm font-extrabold ${kind === 'wet' ? 'bg-[var(--color-night-bg)] text-[var(--color-night-fg)]' : 'text-[var(--color-muted)] bg-[var(--color-surface)]'}`}
+            className={`px-2.5 h-10 text-xs font-extrabold ${kind === 'wet' ? 'bg-[var(--color-night-bg)] text-[var(--color-night-fg)]' : 'text-[var(--color-muted)] bg-[var(--color-surface)]'}`}
           >
             💧 Мокър
           </button>
           <button
             type="button"
             onClick={() => setKind('dirty')}
-            className={`px-3 h-11 text-sm font-extrabold border-l border-[var(--color-line)] ${kind === 'dirty' ? 'bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)]' : 'text-[var(--color-muted)] bg-[var(--color-surface)]'}`}
+            className={`px-2.5 h-10 text-xs font-extrabold border-l border-[var(--color-line)] ${kind === 'dirty' ? 'bg-[var(--color-bedtime-bg)] text-[var(--color-bedtime-fg)]' : 'text-[var(--color-muted)] bg-[var(--color-surface)]'}`}
           >
             💩 Мръсен
           </button>
         </div>
-        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
-<EditActions onSave={() => save.mutate()} onCancel={onCancel} disabled={save.isPending} />
+        <TimePicker hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} compact showNow={false} />
+        <EditActions onSave={() => save.mutate()} onCancel={onCancel} disabled={save.isPending} />
       </div>
     </li>
   );
@@ -608,12 +608,12 @@ function EditDiaperTimelineRow({
 
 function EditActions({ onSave, onCancel, disabled }: { onSave: () => void; onCancel: () => void; disabled?: boolean }) {
   return (
-    <div className="ml-auto flex items-center gap-1">
-      <button type="button" onClick={onSave} disabled={disabled} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] disabled:opacity-50" aria-label="запази">
-        <Check size={18} />
+    <div className="ml-auto shrink-0 flex items-center gap-0.5">
+      <button type="button" onClick={onSave} disabled={disabled} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-brand)] hover:bg-[var(--color-surface-2)] disabled:opacity-50" aria-label="запази">
+        <Check size={16} />
       </button>
-      <button type="button" onClick={onCancel} className="w-10 h-10 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]" aria-label="отказ">
-        <X size={18} />
+      <button type="button" onClick={onCancel} className="w-9 h-9 inline-flex items-center justify-center rounded-md text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-2)]" aria-label="отказ">
+        <X size={16} />
       </button>
     </div>
   );
@@ -636,6 +636,24 @@ function Field({ label, children }: { label: React.ReactNode; children: React.Re
       <span className="block text-xs font-bold text-[var(--color-muted)]">{label}</span>
       {children}
     </label>
+  );
+}
+
+
+function InlineNumber({ value, onChange, suffix, placeholder, className = '' }: { value: string; onChange: (v: string) => void; suffix: string; placeholder: string; className?: string }) {
+  return (
+    <div className={`relative shrink-0 ${className}`}>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={1}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full h-10 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] pl-2 pr-6 text-center text-sm font-extrabold tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/40 focus:border-[var(--color-brand)]"
+      />
+      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-[var(--color-muted)]">{suffix}</span>
+    </div>
   );
 }
 
