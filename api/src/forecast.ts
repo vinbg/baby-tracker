@@ -47,10 +47,17 @@ export function buildForecast(input: BuildForecastInput): ForecastSlot[] {
   // Night feed belongs to the selected calendar day. Example: for 2026-05-19,
   // 03:00 means 2026-05-19 03:00 and should sort before daytime feeds.
   const nightAt = anchorToDay(day, lastFeedTime);
+  const lastFed = lastFedAt ? new Date(lastFedAt) : null;
 
-  const earliestNext = lastFedAt
-    ? addHours(new Date(lastFedAt), intervalHours)
+  const earliestNext = lastFed
+    ? addHours(lastFed, intervalHours)
     : maxDate(new Date(), wakeAt);
+
+  // If there is a real feeding after an anchored planned slot, that planned
+  // slot is considered covered. Example: planned night feed 04:30 + real feed
+  // 05:00 must NOT remain as "overdue" later in the day.
+  const includeNight = !lastFed || nightAt.getTime() > lastFed.getTime();
+  const includeBedtime = !lastFed || bedtimeAt.getTime() > lastFed.getTime();
 
   // Helper to wrap a Date into a slot with the right metadata.
   const make = (at: Date, kind: ForecastSlotKind, prev: Date | null): ForecastSlot => {
@@ -61,9 +68,9 @@ export function buildForecast(input: BuildForecastInput): ForecastSlot[] {
         : perFeedMl;
     const reason =
       kind === 'night'
-        ? 'нощно хранене (по-голяма доза за по-дълъг сън)'
+        ? 'нощно хранене'
         : kind === 'bedtime'
-          ? 'преди сън (леко по-голяма доза)'
+          ? 'преди сън (по-голяма доза)'
           : prev
             ? `~${formatGap(at, prev)} от предходно`
             : 'следващо';
@@ -77,60 +84,49 @@ export function buildForecast(input: BuildForecastInput): ForecastSlot[] {
     };
   };
 
-  // 1 left → night feed only.
-  if (remainingFeeds === 1) {
-    const at = snapTo5Min(maxDate(earliestNext, nightAt));
-    return [make(at, 'night', null)];
-  }
+  const anchorKinds: ForecastSlotKind[] = [];
+  if (includeNight) anchorKinds.push('night');
+  if (includeBedtime) anchorKinds.push('bedtime');
+  anchorKinds.sort((a, b) => {
+    const da = a === 'night' ? nightAt : bedtimeAt;
+    const db = b === 'night' ? nightAt : bedtimeAt;
+    return da.getTime() - db.getTime();
+  });
 
-  // 2 left → night + bedtime when the night feed is still relevant for the
-  // selected day; otherwise just keep the remaining order after earliestNext.
-  if (remainingFeeds === 2) {
-    const bedtime = snapTo5Min(maxDate(earliestNext, bedtimeAt));
-    const night = snapTo5Min(
-      nightAt.getTime() < bedtimeAt.getTime()
-        ? nightAt
-        : maxDate(addHours(bedtime, intervalHours * MIN_GAP_RATIO), nightAt),
-    );
-    return sortSlots([make(night, 'night', null), make(bedtime, 'bedtime', night)]);
-  }
+  const selectedAnchors = anchorKinds.slice(0, remainingFeeds);
+  const regularCount = Math.max(0, remainingFeeds - selectedAnchors.length);
+  const hasBedtime = selectedAnchors.includes('bedtime');
 
-  // 3+ → spread (n-2) between earliestNext and bedtime, then bedtime, then night.
-  const regularCount = remainingFeeds - 2;
-  let regulars: Date[];
-  if (earliestNext.getTime() >= bedtimeAt.getTime()) {
-    // We've drifted past bedtime — step at plan interval and accept that.
-    regulars = stepEvery(earliestNext, regularCount, intervalHours);
-  } else {
-    const totalSpan = (bedtimeAt.getTime() - earliestNext.getTime()) / 3_600_000;
-    const idealGap = regularCount === 1 ? 0 : totalSpan / regularCount;
-    const gap = Math.max(idealGap, intervalHours * MIN_GAP_RATIO);
-    regulars = [];
-    for (let i = 0; i < regularCount; i++) {
-      regulars.push(addHours(earliestNext, gap * i));
+  let regulars: Date[] = [];
+  if (regularCount > 0) {
+    if (hasBedtime && earliestNext.getTime() < bedtimeAt.getTime()) {
+      const totalSpan = (bedtimeAt.getTime() - earliestNext.getTime()) / 3_600_000;
+      const idealGap = regularCount === 1 ? 0 : totalSpan / regularCount;
+      const gap = Math.max(idealGap, intervalHours * MIN_GAP_RATIO);
+      for (let i = 0; i < regularCount; i++) {
+        regulars.push(addHours(earliestNext, gap * i));
+      }
+    } else {
+      regulars = stepEvery(earliestNext, regularCount, intervalHours);
     }
   }
-  const regularsRounded = regulars.map(snapTo5Min);
-
-  const lastRegular = regularsRounded[regularsRounded.length - 1];
-  const bedtime = snapTo5Min(
-    maxDate(addHours(lastRegular, intervalHours * MIN_GAP_RATIO), bedtimeAt),
-  );
-  const night = snapTo5Min(
-    nightAt.getTime() < bedtimeAt.getTime()
-      ? nightAt
-      : maxDate(addHours(bedtime, intervalHours * MIN_GAP_RATIO), nightAt),
-  );
 
   const out: ForecastSlot[] = [];
   let prev: Date | null = null;
-  for (const at of regularsRounded) {
+  for (const at of regulars.map(snapTo5Min)) {
     out.push(make(at, 'regular', prev));
     prev = at;
   }
-  out.push(make(bedtime, 'bedtime', prev));
-  out.push(make(night, 'night', null));
-  return sortSlots(out);
+
+  if (selectedAnchors.includes('bedtime')) {
+    const minBedtime = prev ? addHours(prev, intervalHours * MIN_GAP_RATIO) : earliestNext;
+    out.push(make(snapTo5Min(maxDate(minBedtime, bedtimeAt)), 'bedtime', prev));
+  }
+  if (selectedAnchors.includes('night')) {
+    out.push(make(snapTo5Min(nightAt), 'night', null));
+  }
+
+  return sortSlots(out).slice(0, remainingFeeds);
 }
 
 function sortSlots(slots: ForecastSlot[]): ForecastSlot[] {
