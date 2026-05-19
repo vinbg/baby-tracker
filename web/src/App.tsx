@@ -6,7 +6,6 @@ import { ageLabelFromDate, dayKey, fmtDay } from './lib/utils';
 import { useTheme } from './lib/theme';
 import { CalendarPanel } from './components/CalendarPanel';
 import { DayView } from './components/DayView';
-import { RecommendationsCard } from './components/RecommendationsCard';
 import { TrendsView } from './components/TrendsView';
 
 function LoginPage({ onLogin }: { onLogin: () => void }) {
@@ -148,23 +147,17 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             daysWithData={recentDays.data?.map((r) => r.day) ?? []}
             birthDate={baby.data?.birthDate}
           />
-          {baby.data && <RecommendationsCard day={day} />}
         </aside>
 
         <section className="min-w-0">
           {view === 'trends' ? <TrendsView onBack={() => setView('today')} /> : <DayView day={day} onOpenTrends={() => setView('trends')} />}
         </section>
 
-        {baby.data && (
-          <div className="lg:hidden">
-            <RecommendationsCard day={day} />
-          </div>
-        )}
       </main>
 
 
       <footer className="text-center text-[11px] sm:text-xs text-[var(--color-muted)] px-4 pt-6 pb-6">
-        Препоръката е от опаковката HiPP Combiotic 1. Реалните дози са в "Моят план". Винаги следвай педиатър.
+        Дозите са ориентировъчни. Реалният режим е в „Моят план“ — следвай педиатър.
       </footer>
     </div>
   );
