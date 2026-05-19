@@ -106,15 +106,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             <div className="font-medium text-[var(--color-ink)]">{fmtDay(selected)}</div>
             <div className="hidden sm:block">избран ден</div>
           </div>
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label={theme === 'dark' ? 'Светла тема' : 'Тъмна тема'}
-            title={theme === 'dark' ? 'Светла тема' : 'Тъмна тема'}
-            className="shrink-0 inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink-dim)] hover:text-[var(--color-brand)] hover:border-[var(--color-brand)] transition"
-          >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
+          <ThemeSwitch theme={theme} onToggle={toggle} />
           <button
             type="button"
             onClick={onLogout}
@@ -177,6 +169,34 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   );
 }
 
+
+
+function ThemeSwitch({ theme, onToggle }: { theme: 'light' | 'dark'; onToggle: () => void }) {
+  const dark = theme === 'dark';
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      role="switch"
+      aria-checked={dark}
+      aria-label={dark ? 'Превключи към светла тема' : 'Превключи към тъмна тема'}
+      title={dark ? 'Светла тема' : 'Тъмна тема'}
+      className="shrink-0 inline-flex items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] p-1 shadow-sm transition hover:border-[var(--color-brand)]"
+    >
+      <span className={`hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-full transition ${!dark ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}>
+        <Sun size={15} />
+      </span>
+      <span className="relative inline-flex h-8 w-14 items-center rounded-full bg-[var(--color-surface-2)] px-1">
+        <span className={`absolute h-6 w-6 rounded-full bg-[var(--color-brand)] shadow-md transition-transform ${dark ? 'translate-x-6' : 'translate-x-0'}`} />
+        <Sun size={13} className={`relative z-10 ml-1 transition ${dark ? 'text-[var(--color-muted)]' : 'text-white'}`} />
+        <Moon size={13} className={`relative z-10 ml-auto mr-1 transition ${dark ? 'text-white' : 'text-[var(--color-muted)]'}`} />
+      </span>
+      <span className={`hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-full transition ${dark ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}>
+        <Moon size={15} />
+      </span>
+    </button>
+  );
+}
 
 function DateStrip({ selected, onSelect, birthDate }: { selected: Date; onSelect: (d: Date) => void; birthDate?: string }) {
   const today = new Date();
