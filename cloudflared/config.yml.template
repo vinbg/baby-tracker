@@ -1,0 +1,11 @@
+# Copy to ~/.cloudflared/config.yml and replace placeholders locally.
+# Keep credential JSON files outside git.
+
+tunnel: <tunnel-name-or-uuid>
+credentials-file: /Users/<username>/.cloudflared/<tunnel-credentials>.json
+protocol: http2
+
+ingress:
+  - hostname: baby.example.com
+    service: http://localhost:5181
+  - service: http_status:404

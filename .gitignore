@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment / local secrets
+.env
+.env.*
+!.env.example
+api/.env
+api/.env.*
+!api/.env.example
+
+# Cloudflare credentials / local tunnel material
+cloudflared/*.json
+cloudflared/cert.pem
+
+# Local database dumps can contain private baby diary data
+database/*.sql
+!database/schema.sql
+
+# Logs and OS/editor noise
+*.log
+.DS_Store
+.vscode/
+.idea/
