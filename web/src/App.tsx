@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { BarChart3, CalendarDays, Home, LogOut, Moon, Settings, Sun } from 'lucide-react';
 import { api, clearAuthToken, hasAuthToken, setAuthToken } from './lib/api';
 import { ageLabelFromDate, dayKey, fmtDay } from './lib/utils';
 import { useTheme } from './lib/theme';
@@ -127,7 +127,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </header>
 
-      <div className="lg:hidden mx-auto max-w-6xl px-3 sm:px-5 pt-3">
+      <div className="lg:hidden mx-auto max-w-6xl px-3 sm:px-5 pt-3 space-y-3">
+        <DateStrip selected={selected} onSelect={setSelected} birthDate={baby.data?.birthDate} />
         <details className="group">
           <summary className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] px-4 py-3 text-sm font-semibold cursor-pointer select-none flex items-center justify-between list-none [&::-webkit-details-marker]:hidden">
             <span>📅 Смени ден</span>
@@ -167,10 +168,76 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         )}
       </main>
 
-      <footer className="text-center text-[11px] sm:text-xs text-[var(--color-muted)] px-4 py-6">
+      <MobileBottomNav />
+
+      <footer className="text-center text-[11px] sm:text-xs text-[var(--color-muted)] px-4 pt-6 pb-24 lg:pb-6">
         Препоръката е от опаковката HiPP Combiotic 1. Реалните дози са в "Моят план". Винаги следвай педиатър.
       </footer>
     </div>
+  );
+}
+
+
+function DateStrip({ selected, onSelect, birthDate }: { selected: Date; onSelect: (d: Date) => void; birthDate?: string }) {
+  const today = new Date();
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - 4 + i);
+    return d;
+  });
+  const min = birthDate ? new Date(birthDate + 'T00:00:00') : null;
+  const selectedKey = dayKey(selected);
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 snap-x">
+      {days.map((d) => {
+        const disabled = min ? d < min : false;
+        const active = dayKey(d) === selectedKey;
+        return (
+          <button
+            key={dayKey(d)}
+            type="button"
+            disabled={disabled}
+            onClick={() => onSelect(d)}
+            className={`snap-start min-w-[3.25rem] rounded-2xl border px-2 py-2 text-center shadow-sm transition disabled:opacity-40 ${
+              active
+                ? 'bg-[var(--color-brand)] border-[var(--color-brand)] text-[var(--color-on-brand)]'
+                : 'bg-[var(--color-surface)] border-[var(--color-line)] text-[var(--color-muted)]'
+            }`}
+          >
+            <span className="block text-[10px] uppercase font-semibold">
+              {d.toLocaleDateString('bg-BG', { weekday: 'short' })}
+            </span>
+            <span className={`block text-lg font-extrabold tabular-nums ${active ? 'text-white' : 'text-[var(--color-ink)]'}`}>
+              {d.getDate()}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function MobileBottomNav() {
+  const items = [
+    { icon: <Home size={19} />, label: 'Днес', active: true },
+    { icon: <CalendarDays size={19} />, label: 'Дни' },
+    { icon: <BarChart3 size={19} />, label: 'Тренд' },
+    { icon: <Settings size={19} />, label: 'План' },
+  ];
+  return (
+    <nav className="lg:hidden fixed left-3 right-3 bottom-3 z-20 rounded-[1.6rem] border border-[var(--color-line)] bg-[var(--color-surface)]/90 backdrop-blur-xl shadow-[var(--shadow-soft)] p-2 grid grid-cols-4 gap-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+      {items.map((item) => (
+        <button
+          key={item.label}
+          type="button"
+          className={`rounded-2xl py-2 text-[11px] font-bold flex flex-col items-center gap-1 ${item.active ? 'bg-[var(--color-brand-soft)] text-[var(--color-brand-strong)]' : 'text-[var(--color-muted)]'}`}
+        >
+          {item.icon}
+          {item.label}
+        </button>
+      ))}
+    </nav>
   );
 }
 

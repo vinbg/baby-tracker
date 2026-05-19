@@ -12,8 +12,16 @@ export const dayKey = (d: Date) => {
   return `${y}-${m}-${day}`;
 };
 
+export function parseTimestamp(value: string): Date {
+  // Postgres can return `YYYY-MM-DD HH:mm:ss+03`; Safari/iOS prefers strict ISO.
+  const normalized = value
+    .replace(' ', 'T')
+    .replace(/([+-]\d{2})$/, '$1:00');
+  return new Date(normalized);
+}
+
 export const fmtTime = (iso: string) => {
-  const d = new Date(iso);
+  const d = parseTimestamp(iso);
   return d.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
 };
 
